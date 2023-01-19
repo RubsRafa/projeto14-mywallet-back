@@ -2,14 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import joi from 'joi';
 import dayjs from 'dayjs';
-// import { MongoClient } from 'mongodb';
+import bcrypt from 'bcrypt';
+import { v4 as uuid } from 'uuid';
+import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
 dotenv.config();
 
-// const mongoClient = new MongoClient(process.env.DATABASE_URL);
+const mongoClient = new MongoClient(process.env.DATABASE_URL);
 
-// await mongoClient.connect();
-// const db = mongoClient.db(); 
+await mongoClient.connect();
+const db = mongoClient.db(); 
 
 const app = express();
 app.use(cors());
@@ -21,8 +23,10 @@ app.listen(process.env.PORT, () => console.log(`Servidor funcionando na porta ${
 const users = [];
 const entry = [];
 
-app.post('/registration', (req, res) => {
+app.post('/sign-up', async (req, res) => {
     const { name, email, password, confirmation } = req.body;
+    const passwordHashed = bcrypt.hashSync(password, 10)
+
 
     try {
         const userSchema = joi.object({
@@ -36,16 +40,12 @@ app.post('/registration', (req, res) => {
             const errors = validation.error.details.map((d) => d.message);
             return res.status(422).send(errors)
         }
-
-        users.map((u) => {
-            if (u.name === name || u.email === email) {
-                return res.status(409).send('Usuário já cadastrado!')
-            }
-        })
-        if (password !== confirmation) return res.status(406).send('Senhas devem ser iguais')
-
-        users.push({ name, email, password, confirmation });
-        return res.status(200).send(users)
+        const userExist = await db.collection('users').findOne({ name })
+        if (userExist) return res.status(409).send('Usuário já cadastrado!')
+        if (password !== confirmation) return res.status(400).send('Senhas devem ser iguais.')
+        
+        await db.collection('users').insertOne({ name, email, password: passwordHashed });
+        return res.sendStatus(201)
 
     } catch (err) {
         console.log(err)
@@ -53,10 +53,7 @@ app.post('/registration', (req, res) => {
     }
 
 })
-app.get('/registration', (req, res) => {
-    res.send(entry)
-})
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     try {
@@ -65,29 +62,41 @@ app.post('/login', (req, res) => {
             password: joi.string().required()
         })
         const validation = loginSchema.validate({ email, password });
+        
         if (validation.error) {
             const errors = validation.error.details.map((d) => d.message);
             return res.status(422).send(errors)
         }
 
-        users.find((u) => {
-            if (u.email === email && u.password === password) {
-                return res.sendStatus(200)
-            } else {
-                return res.status(404).send('Usuário não cadastrado.')
-            }
-        })
+        const userExist = await db.collection('users').findOne({ email })
+        
+        if (userExist && bcrypt.compareSync(password, userExist.password)) {
+            const token = uuid(); 
+            await db.collection('sessions').insertOne({
+                userId: userExist._id,
+                token
+            })
+            return res.send(token)
+        } else {
+            return res.status(404).send('Usuário não encontrado. Email ou senha incorretos.')
+        }
+
+
 
     } catch(err) {
         return res.status(500).send(err)
     }
 })
-app.post('/input', (req, res) => {
+app.post('/input', async (req, res) => {
     const { value, description } = req.body; 
-    // const { user } = req.header; 
+    const { authorization } = req.headers;
+    const token = authorization?.replace('Bearer ', '') 
+
     try {
-        // const userExist = users.find((u) => u.name === user);
-        // if (!userExist) return res.sendStatus(404)
+        if (!token) return res.status(401).send('Token não existe')
+        const session = await db.collection('sessions').findOne({ token });
+        if (!session) return res.status(401).send('Token não autorizado')
+        
         const registersSchema = joi.object({
             value: joi.string().required(),
             description: joi.string().required()
@@ -97,8 +106,20 @@ app.post('/input', (req, res) => {
             const errors = validation.error.details.map((d) => d.message);
             return res.status(422).send(errors)
         }
-        entry.push({ value, description, type: 'input', date: dayjs().format(`DD/MM`) })
-        return res.sendStatus(200)
+
+        const userExist = await db.collection('users').findOne({ _id: session.userId });
+
+        if (!userExist) return res.status(401).send('Usuario não existe')
+
+        const tokenExist = await db.collection('sessions').findOne({ token });
+
+        if (!tokenExist) return res.send(403)
+
+        await db.collection('entry').insertOne({
+            value, description, type: 'input', date: dayjs().format(`DD/MM`), idUser: userExist._id
+        })
+
+        return res.sendStatus(201)
     } catch(err) {
         return res.status(500).send(err)
     }
@@ -123,6 +144,23 @@ app.post('/output', (req, res) => {
     } catch(err) {
         return res.status(500).send(err)
     }
+});
+
+
+app.get('/users', async (req, res) => {
+    const users = await db.collection('users').find().toArray(); 
+    res.send(users)
+})
+app.get('/entry', async (req, res) => {
+    const { id } = req.headers;
+
+    const myBalance = await db.collection('entry').find({ idUser: id }).toArray();
+
+    res.send(myBalance)
+});
+app.get('/sessions', async (req, res) => {
+    const sessions = await db.collection('sessions').find().toArray(); 
+    res.send(sessions)
 });
 // app.post('/') > email, password; > find.
 // app.get('/') > id, email, password, name; 
