@@ -1,0 +1,13 @@
+import joi from 'joi';
+
+export const userSchema = joi.object({
+    name: joi.string().required(),
+    email: joi.string().email({ tlds: { allow: false } }).required(),
+    password: joi.string().required(),
+    confirmation: joi.string().required()
+});
+
+export const loginSchema = joi.object({
+    email: joi.string().email({ tlds: { allow: false } }).required(),
+    password: joi.string().required()
+});

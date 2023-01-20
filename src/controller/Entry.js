@@ -1,11 +1,10 @@
 import { ObjectId } from 'mongodb';
-import joi from 'joi';
+import { registersSchema } from '../model/EntryModel.js';
 import dayjs from 'dayjs';
 import db from '../database/database.js';
 
 export async function createEntry(req, res) {
     const { value, description, type } = req.body;
-    console.log({ value, description, type })
     const { authorization } = req.headers;
     const token = authorization?.replace('Bearer ', '')
 
@@ -14,11 +13,6 @@ export async function createEntry(req, res) {
         const session = await db.collection('sessions').findOne({ token });
         if (!session) return res.status(401).send('Token não autorizado')
 
-        const registersSchema = joi.object({
-            value: joi.string().required(),
-            description: joi.string().required(),
-            type: joi.string().valid("input", "output").required(),
-        })
         const validation = registersSchema.validate({ value, description, type });
         if (validation.error) {
             const errors = validation.error.details.map((d) => d.message);
@@ -46,12 +40,19 @@ export async function getEntry(req, res) {
     const { authorization } = req.headers;
     const token = authorization?.replace('Bearer ', '')
 
-    const user = await db.collection('sessions').findOne({ token })
-    
-    if (!user) return res.sendStatus(404)
+    try {
 
-    const myEntry = await db.collection('entry').find({ idUser: new ObjectId(user.userId) }).toArray();
-    
-    return res.send(myEntry)
+        const user = await db.collection('sessions').findOne({ token })
+
+        if (!user) return res.sendStatus(404)
+
+        const myEntry = await db.collection('entry').find({ idUser: new ObjectId(user.userId) }).toArray();
+
+        return res.send(myEntry)
+
+    } catch (err) {
+        res.send(err)
+    }
+
 }
 

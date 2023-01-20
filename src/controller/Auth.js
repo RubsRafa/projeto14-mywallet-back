@@ -1,4 +1,4 @@
-import joi from 'joi';
+import { userSchema, loginSchema } from '../model/AuthModel.js';
 import bcrypt from 'bcrypt';
 import { v4 as uuid } from 'uuid';
 import db from '../database/database.js';
@@ -9,12 +9,6 @@ export async function signUp(req, res) {
 
 
     try {
-        const userSchema = joi.object({
-            name: joi.string().required(),
-            email: joi.string().email({ tlds: { allow: false } }).required(),
-            password: joi.string().required(),
-            confirmation: joi.string().required()
-        });
         const validation = userSchema.validate({ name, email, password, confirmation }, { abortEarly: false });
         if (validation.error) {
             const errors = validation.error.details.map((d) => d.message);
@@ -37,10 +31,6 @@ export async function login(req, res) {
     const { email, password } = req.body;
 
     try {
-        const loginSchema = joi.object({
-            email: joi.string().email({ tlds: { allow: false } }).required(),
-            password: joi.string().required()
-        })
         const validation = loginSchema.validate({ email, password });
 
         if (validation.error) {
