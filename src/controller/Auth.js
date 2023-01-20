@@ -48,9 +48,8 @@ export async function login(req, res) {
             return res.status(422).send(errors)
         }
 
-        let id;
+    
         const userExist = await db.collection('users').findOne({ email })
-            .then((u) => id = u._id)
 
         await db.collection('sessions').deleteMany({ userId: userExist._id })
 
@@ -60,14 +59,13 @@ export async function login(req, res) {
                 userId: userExist._id,
                 token
             })
-            return res.send({ token, id })
+            return res.send({ token })
         } else {
             return res.status(404).send('Usuário não encontrado. Email ou senha incorretos.')
         }
 
-
-
     } catch (err) {
+        console.log(err)
         return res.status(500).send(err)
     }
 }

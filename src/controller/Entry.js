@@ -44,10 +44,12 @@ export async function createEntry(req, res) {
 }
 export async function getEntry(req, res) {
     const { authorization } = req.headers;
-    const token = authorization.replace('Bearer ', '')
+    const token = authorization?.replace('Bearer ', '')
 
-    const myBalance = await db.collection('sessions').find({ token }).toArray();
-    const entry = await db.collection('entry').find({ idUser: myBalance.userId }).toArray();
+    const myBalance = await db.collection('sessions').findOne({ token }).toArray(); 
+    const entry = await db.collection('entry').findMany({ idUser: myBalance.userId }).toArray(); 
+    // const allEntry = await db.collection('entry').find().toArray(); 
+
 
     res.send(entry)
 }
