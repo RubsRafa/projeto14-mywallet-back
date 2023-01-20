@@ -79,3 +79,4 @@ export async function sessions(req, res) {
     const sessions = await db.collection('sessions').find().toArray();
     res.send(sessions)
 }
+

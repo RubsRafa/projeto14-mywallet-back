@@ -46,10 +46,12 @@ export async function getEntry(req, res) {
     const { authorization } = req.headers;
     const token = authorization?.replace('Bearer ', '')
 
-    const myBalance = await db.collection('sessions').findOne({ token }).toArray(); 
-    const entry = await db.collection('entry').findMany({ idUser: myBalance.userId }).toArray(); 
-    // const allEntry = await db.collection('entry').find().toArray(); 
+    const user = await db.collection('sessions').findOne({ token })
+    
+    if (!user) return res.sendStatus(404)
 
-
-    res.send(entry)
+    const myEntry = await db.collection('entry').find({ idUser: new ObjectId(user.userId) }).toArray();
+    
+    return res.send(myEntry)
 }
+
