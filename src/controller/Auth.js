@@ -1,4 +1,3 @@
-import { userSchema, loginSchema } from '../model/AuthModel.js';
 import bcrypt from 'bcrypt';
 import { v4 as uuid } from 'uuid';
 import db from '../database/database.js';
@@ -7,13 +6,8 @@ export async function signUp(req, res) {
     const { name, email, password, confirmation } = req.body;
     const passwordHashed = bcrypt.hashSync(password, 10)
 
-
     try {
-        const validation = userSchema.validate({ name, email, password, confirmation }, { abortEarly: false });
-        if (validation.error) {
-            const errors = validation.error.details.map((d) => d.message);
-            return res.status(422).send(errors)
-        }
+
         const userExist = await db.collection('users').findOne({ name })
         if (userExist) return res.status(409).send('Usuário já cadastrado!')
         if (password !== confirmation) return res.status(400).send('Senhas devem ser iguais.')
@@ -25,18 +19,11 @@ export async function signUp(req, res) {
         console.log(err)
         return res.status(500).send(err)
     }
-}
-
+};
 export async function login(req, res) {
     const { email, password } = req.body;
 
     try {
-        const validation = loginSchema.validate({ email, password });
-
-        if (validation.error) {
-            const errors = validation.error.details.map((d) => d.message);
-            return res.status(422).send(errors)
-        }
 
     
         const userExist = await db.collection('users').findOne({ email })
@@ -58,15 +45,12 @@ export async function login(req, res) {
         console.log(err)
         return res.status(500).send(err)
     }
-}
-
+};
 export async function users(req, res) {
     const users = await db.collection('users').find().toArray();
     res.send(users)
-}
-
+};
 export async function sessions(req, res) {
     const sessions = await db.collection('sessions').find().toArray();
     res.send(sessions)
-}
-
+};

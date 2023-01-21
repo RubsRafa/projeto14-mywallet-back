@@ -1,5 +1,4 @@
 import { ObjectId } from 'mongodb';
-import { entrySchema } from '../model/EntryModel.js';
 import dayjs from 'dayjs';
 import db from '../database/database.js';
 
@@ -13,12 +12,6 @@ export async function createEntry(req, res) {
         const session = await db.collection('sessions').findOne({ token });
         if (!session) return res.status(403).send('Token não autorizado')
 
-        const validation = entrySchema.validate({ value, description, type });
-        if (validation.error) {
-            const errors = validation.error.details.map((d) => d.message);
-            return res.status(422).send(errors)
-        }
-
         const userExist = await db.collection('users').findOne({ _id: session.userId });
 
         if (!userExist) return res.status(401).send('Usuario não existe')
@@ -31,7 +24,7 @@ export async function createEntry(req, res) {
     } catch (err) {
         return res.status(500).send(err)
     }
-}
+};
 export async function getEntry(req, res) {
     const { authorization } = req.headers;
     const token = authorization?.replace('Bearer ', '')
@@ -50,7 +43,7 @@ export async function getEntry(req, res) {
         res.status(500).send(err)
     }
 
-}
+};
 export async function deleteEntry(req, res) {
     const { authorization } = req.headers;
     const token = authorization?.replace('Bearer ', '')
@@ -73,7 +66,7 @@ export async function deleteEntry(req, res) {
     } catch (err) {
         return res.status(500).send(err)
     }
-}
+};
 export async function editEntry(req, res) {
     const { id } = req.params;
     const { value, description, type } = req.body;
@@ -84,12 +77,6 @@ export async function editEntry(req, res) {
         if (!token) return res.status(401).send('Informe o token')
         const session = await db.collection('sessions').findOne({ token });
         if (!session) return res.status(403).send('Token não autorizado')
-
-        const validation = entrySchema.validate({ value, description, type });
-        if (validation.error) {
-            const errors = validation.error.details.map((d) => d.message);
-            return res.status(422).send(errors)
-        }
 
         const userExist = await db.collection('users').findOne({ _id: session.userId });
 
@@ -103,4 +90,4 @@ export async function editEntry(req, res) {
     } catch (err) {
         return res.status(500).send(err)
     }
-}
+};
