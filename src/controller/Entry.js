@@ -4,13 +4,9 @@ import db from '../database/database.js';
 
 export async function createEntry(req, res) {
     const { value, description, type } = req.body;
-    const { authorization } = req.headers;
-    const token = authorization?.replace('Bearer ', '')
+    const session = res.locals.session; 
 
     try {
-        if (!token) return res.status(401).send('Informe o token')
-        const session = await db.collection('sessions').findOne({ token });
-        if (!session) return res.status(403).send('Token não autorizado')
 
         const userExist = await db.collection('users').findOne({ _id: session.userId });
 
@@ -70,13 +66,9 @@ export async function deleteEntry(req, res) {
 export async function editEntry(req, res) {
     const { id } = req.params;
     const { value, description, type } = req.body;
-    const { authorization } = req.headers;
-    const token = authorization?.replace('Bearer ', '')
+    const session = res.locals.session; 
 
     try {
-        if (!token) return res.status(401).send('Informe o token')
-        const session = await db.collection('sessions').findOne({ token });
-        if (!session) return res.status(403).send('Token não autorizado')
 
         const userExist = await db.collection('users').findOne({ _id: session.userId });
 

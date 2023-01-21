@@ -3,14 +3,10 @@ import { v4 as uuid } from 'uuid';
 import db from '../database/database.js';
 
 export async function signUp(req, res) {
-    const { name, email, password, confirmation } = req.body;
+    const { name, email, password } = req.body;
     const passwordHashed = bcrypt.hashSync(password, 10)
 
     try {
-
-        const userExist = await db.collection('users').findOne({ name })
-        if (userExist) return res.status(409).send('Usuário já cadastrado!')
-        if (password !== confirmation) return res.status(400).send('Senhas devem ser iguais.')
 
         await db.collection('users').insertOne({ name, email, password: passwordHashed });
         return res.sendStatus(201)
@@ -21,12 +17,10 @@ export async function signUp(req, res) {
     }
 };
 export async function login(req, res) {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const userExist = res.locals.user; 
 
     try {
-
-    
-        const userExist = await db.collection('users').findOne({ email })
 
         await db.collection('sessions').deleteMany({ userId: userExist._id })
 
