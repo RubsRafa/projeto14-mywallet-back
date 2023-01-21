@@ -9,9 +9,9 @@ export async function createEntry(req, res) {
     const token = authorization?.replace('Bearer ', '')
 
     try {
-        if (!token) return res.status(401).send('Token não existe')
+        if (!token) return res.status(401).send('Informe o token')
         const session = await db.collection('sessions').findOne({ token });
-        if (!session) return res.status(401).send('Token não autorizado')
+        if (!session) return res.status(403).send('Token não autorizado')
 
         const validation = entrySchema.validate({ value, description, type });
         if (validation.error) {
@@ -22,10 +22,6 @@ export async function createEntry(req, res) {
         const userExist = await db.collection('users').findOne({ _id: session.userId });
 
         if (!userExist) return res.status(401).send('Usuario não existe')
-
-        const tokenExist = await db.collection('sessions').findOne({ token });
-
-        if (!tokenExist) return res.send(403)
 
         await db.collection('entry').insertOne({
             value, description, type, date: dayjs().format(`DD/MM`), idUser: userExist._id
@@ -48,10 +44,10 @@ export async function getEntry(req, res) {
 
         const myEntry = await db.collection('entry').find({ idUser: new ObjectId(user.userId) }).toArray();
 
-        return res.send(myEntry)
+        return res.status(200).send(myEntry)
 
     } catch (err) {
-        res.send(err)
+        res.status(500).send(err)
     }
 
 }
@@ -61,25 +57,50 @@ export async function deleteEntry(req, res) {
     const { id } = req.params;
 
     try {
-        if (!token) return res.status(401).send('Token não existe')
+        if (!token) return res.status(401).send('Informe o token')
         const session = await db.collection('sessions').findOne({ token });
-        if (!session) return res.status(401).send('Token não autorizado')
+        if (!session) return res.status(403).send('Token não autorizado')
 
         const userExist = await db.collection('users').findOne({ _id: session.userId });
 
         if (!userExist) return res.status(401).send('Usuario não existe')
 
-        const tokenExist = await db.collection('sessions').findOne({ token });
-
-        if (!tokenExist) return res.send(403)
-
         await db.collection('entry').deleteOne({
             _id: ObjectId(id)
         })
+
+        return res.sendStatus(200)
+    } catch (err) {
+        return res.status(500).send(err)
+    }
+}
+export async function editEntry(req, res) {
+    const { id } = req.params;
+    const { value, description, type } = req.body;
+    const { authorization } = req.headers;
+    const token = authorization?.replace('Bearer ', '')
+
+    try {
+        if (!token) return res.status(401).send('Informe o token')
+        const session = await db.collection('sessions').findOne({ token });
+        if (!session) return res.status(403).send('Token não autorizado')
+
+        const validation = entrySchema.validate({ value, description, type });
+        if (validation.error) {
+            const errors = validation.error.details.map((d) => d.message);
+            return res.status(422).send(errors)
+        }
+
+        const userExist = await db.collection('users').findOne({ _id: session.userId });
+
+        if (!userExist) return res.status(401).send('Usuario não existe')
+
+        await db.collection('entry').updateOne(
+            { _id: ObjectId(id) },
+            { $set: { value, description, type, date: dayjs().format(`DD/MM`), idUser: userExist._id } })
 
         return res.sendStatus(201)
     } catch (err) {
         return res.status(500).send(err)
     }
 }
-
