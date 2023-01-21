@@ -49,7 +49,7 @@ export async function login(req, res) {
                 userId: userExist._id,
                 token
             })
-            return res.send({ token })
+            return res.send({ token, name: userExist.name })
         } else {
             return res.status(404).send('Usuário não encontrado. Email ou senha incorretos.')
         }
