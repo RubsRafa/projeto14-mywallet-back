@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { registersSchema } from '../model/EntryModel.js';
+import { entrySchema } from '../model/EntryModel.js';
 import dayjs from 'dayjs';
 import db from '../database/database.js';
 
@@ -13,7 +13,7 @@ export async function createEntry(req, res) {
         const session = await db.collection('sessions').findOne({ token });
         if (!session) return res.status(401).send('Token não autorizado')
 
-        const validation = registersSchema.validate({ value, description, type });
+        const validation = entrySchema.validate({ value, description, type });
         if (validation.error) {
             const errors = validation.error.details.map((d) => d.message);
             return res.status(422).send(errors)
@@ -54,5 +54,32 @@ export async function getEntry(req, res) {
         res.send(err)
     }
 
+}
+export async function deleteEntry(req, res) {
+    const { authorization } = req.headers;
+    const token = authorization?.replace('Bearer ', '')
+    const { id } = req.params;
+
+    try {
+        if (!token) return res.status(401).send('Token não existe')
+        const session = await db.collection('sessions').findOne({ token });
+        if (!session) return res.status(401).send('Token não autorizado')
+
+        const userExist = await db.collection('users').findOne({ _id: session.userId });
+
+        if (!userExist) return res.status(401).send('Usuario não existe')
+
+        const tokenExist = await db.collection('sessions').findOne({ token });
+
+        if (!tokenExist) return res.send(403)
+
+        await db.collection('entry').deleteOne({
+            _id: ObjectId(id)
+        })
+
+        return res.sendStatus(201)
+    } catch (err) {
+        return res.status(500).send(err)
+    }
 }
 
