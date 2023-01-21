@@ -2,7 +2,7 @@ import db from "../database/database.js";
 
 export async function entryCreateValidation(req, res, next) {
     const { authorization } = req.headers;
-    const token = authorization?.replace('Bearer ', '')
+    const token = authorization?.replace('Bearer ', '');
 
      try {
 
@@ -15,6 +15,6 @@ export async function entryCreateValidation(req, res, next) {
         next(); 
         
      } catch (error) {
-        return res.status(500).send(error)
+        return res.status(500).send(error);
      }
 }

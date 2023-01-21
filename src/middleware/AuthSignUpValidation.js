@@ -5,14 +5,14 @@ export async function authSignUpValidattion(req, res, next) {
 
     try {
 
-        const userExist = await db.collection('users').findOne({ name })
-        if (userExist) return res.status(409).send('Usuário já cadastrado!')
-        if (password !== confirmation) return res.status(400).send('Senhas devem ser iguais.')
+        const userExist = await db.collection('users').findOne({ name });
+        if (userExist) return res.status(409).send('Usuário já cadastrado!');
+        if (password !== confirmation) return res.status(400).send('Senhas devem ser iguais.');
 
         next();
 
     } catch (err) {
-        console.log(err)
-        return res.status(500).send(err)
+        console.log(err);
+        return res.status(500).send(err);
     }
 }

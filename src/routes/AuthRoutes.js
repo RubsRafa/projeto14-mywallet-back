@@ -7,9 +7,9 @@ import { authLoginValidattion } from '../middleware/AuthLoginValidation.js';
 
 const routerAuth = Router(); 
 
-routerAuth.post('/sign-up', validateSchema(userSchema), authSignUpValidattion, signUp)
-routerAuth.post('/login', validateSchema(loginSchema), authLoginValidattion, login)
-routerAuth.get('/users', users)
+routerAuth.post('/sign-up', validateSchema(userSchema), authSignUpValidattion, signUp);
+routerAuth.post('/login', validateSchema(loginSchema), authLoginValidattion, login);
+routerAuth.get('/users', users);
 routerAuth.get('/sessions', sessions);
 
 export default routerAuth; 
