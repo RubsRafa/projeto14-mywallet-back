@@ -22,37 +22,38 @@ export async function createEntry(req, res) {
     }
 };
 export async function getEntry(req, res) {
-    const { authorization } = req.headers;
-    const token = authorization?.replace('Bearer ', '');
+
+    const user = res.locals.user; 
 
     try {
 
-        const user = await db.collection('sessions').findOne({ token });
-
-        if (!user) return res.sendStatus(404);
-
         const myEntry = await db.collection('entry').find({ idUser: new ObjectId(user.userId) }).toArray();
-
-        return res.status(200).send(myEntry);
+        const myBalance = myEntry.map((i) => {
+            if (i.type === 'input') {
+                return Number(i.value) * (1)
+            } else {
+                return Number(i.value) * (-1)
+            }
+        })
+        let sum = 0;
+        for (let i = 0; i < myBalance.length; i++) {
+            sum += myBalance[i];
+        }
+        const results = sum.toFixed(2)
+        
+        return res.status(200).send({myEntry, results});
 
     } catch (err) {
+        console.log(err)
         res.status(500).send(err);
     }
 
 };
 export async function deleteEntry(req, res) {
-    const { authorization } = req.headers;
-    const token = authorization?.replace('Bearer ', '');
     const { id } = req.params;
-
+    
     try {
-        if (!token) return res.status(401).send('Informe o token');
-        const session = await db.collection('sessions').findOne({ token });
-        if (!session) return res.status(403).send('Token não autorizado');
-
-        const userExist = await db.collection('users').findOne({ _id: session.userId });
-
-        if (!userExist) return res.status(401).send('Usuario não existe');
+        if (!id) return res.status(400).send('Informe o id do registro!')
 
         await db.collection('entry').deleteOne({
             _id: ObjectId(id)
